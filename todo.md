@@ -1,0 +1,56 @@
+- [x] Define the overall architecture using Next.js and Supabase.
+- [x] Detail the Next.js frontend folder structure.
+- [x] Explain Supabase integration for backend services (auth, database, storage).
+- [x] Outline how core e-commerce features will be implemented within this architecture.
+- [x] Write the architecture overview document in a detailed article format.
+- [x] Save the document as `architecture_overview.md`.
+- [x] Design the database schema for products, categories, users, orders, cart.
+- [x] Write SQL DDL for creating tables in Supabase (PostgreSQL).
+- [x] Define user roles (customer, admin) and how they integrate with Supabase Auth.
+- [x] Outline Row Level Security (RLS) policies for data protection.
+- [x] Create a `database_schema.sql` file with DDL statements.
+- [x] Create a `rls_policies.md` file detailing RLS setup.
+- [x] Document the backend setup and API interaction points (conceptual)..
+
+- [x] Define the overall architecture using Next.js and Supabase.
+- [x] Detail the Next.js frontend folder structure.
+- [x] Explain Supabase integration for backend services (auth, database, storage).
+- [x] Outline how core e-commerce features will be implemented within this architecture.
+- [x] Write the architecture overview document in a detailed article format.
+- [x] Save the document as `architecture_overview.md`.
+- [x] Design the database schema for products, categories, users, orders, cart.
+- [x] Write SQL DDL for creating tables in Supabase (PostgreSQL).
+- [x] Define user roles (customer, admin) and how they integrate with Supabase Auth.
+- [x] Outline Row Level Security (RLS) policies for data protection.
+- [x] Create a `database_schema.sql` file with DDL statements.
+- [x] Create a `rls_policies.md` file detailing RLS setup.
+- [x] Document the backend setup and API interaction points (conceptual).
+- [x] Create Next.js project directory structure (conceptual, as per `architecture_overview.md`).
+- [x] Implement Supabase client initialization for Next.js (`/lib/supabaseClient.ts`).
+- [x] Implement TypeScript type definitions (`/types/*`).
+- [x] Implement core layout components (Header, Footer, Nav) (`/components/layout/*`).
+- [x] Implement AuthContext and useAuth hook (`/contexts/AuthContext.tsx`, `/hooks/useAuth.ts`).
+- [x] Implement authentication pages (Login, Register) (`/app/(auth)/*`).
+- [x] Implement Product Listing page (`/app/(main)/products/page.tsx` and `/components/products/ProductCard.tsx`).
+- [x] Implement Product Detail page (`/app/(main)/products/[slug]/page.tsx`).
+- [x] Implement CartContext and useCart hook (`/contexts/CartContext.tsx`, `/hooks/useCart.ts`).
+- [x] Implement Shopping Cart page (`/app/(checkout)/cart/page.tsx` and `/components/cart/*`).
+- [x] Implement Checkout pages (Shipping, Payment) (`/app/(checkout)/shipping/page.tsx`, `/app/(checkout)/payment/page.tsx`).
+- [x] Implement User Profile page (`/app/(user)/profile/page.tsx`).
+- [x] Implement User Order History page (`/app/(user)/orders/page.tsx`, `/app/(user)/orders/[orderId]/page.tsx`).
+- [x] Implement Admin Dashboard layout and basic pages (`/app/admin/*`).
+- [x] Implement Admin Product Management (List, Add, Edit) (`/app/admin/products/*`).
+- [x] Implement Admin Category Management (`/app/admin/categories/*`).
+- [x] Implement Admin Order Management (`/app/admin/orders/*`).
+- [x] Implement Admin User Management (`/app/admin/users/*`).
+- [x] Ensure responsive design for all components using Tailwind CSS.
+
+
+- [x] Integrate Stripe for payment processing.
+  - [x] Create Stripe integration overview and setup guide (`stripe_integration_guide.md`).
+  - [x] Implement conceptual frontend components for Stripe (e.g., Elements for card input) (`/components/payment/StripeCheckoutForm.tsx`).
+  - [x] Outline backend (Supabase Edge Function) logic for Stripe (e.g., creating PaymentIntents, handling webhooks) (`/supabase/functions/stripe-payment/index.ts_conceptual`).
+- [x] Integrate PayPal for payment processing.
+  - [x] Create PayPal integration overview and setup guide (`paypal_integration_guide.md`).
+  - [x] Implement conceptual frontend components for PayPal (e.g., PayPal buttons) (`/components/payment/PayPalCheckoutButton.tsx`).
+  - [x] Outline backend (Supabase Edge Function) logic for PayPal (e.g., creating orders, capturing payments, handling webhooks) (`/supabase/functions/paypal-payment/index.ts_conceptual`).

@@ -1,0 +1,226 @@
+// supabase/functions/stripe-payment/index.ts (Conceptual)
+// This file outlines the conceptual logic for Supabase Edge Functions handling Stripe payments.
+// It includes creating PaymentIntents and handling Stripe webhooks.
+
+// Import Deno's standard server and Stripe library
+// import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+// import Stripe from "https://esm.sh/stripe@10.17.0?target=deno&no-check";
+
+// console.log("Stripe Payment Edge Function starting...");
+
+// // Initialize Stripe client with your secret key, ideally from environment variables
+// const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
+//   apiVersion: "2022-11-15", // Use the API version you are targeting
+//   httpClient: Stripe.createFetchHttpClient(), // Required for Deno runtime
+// });
+
+// const corsHeaders = {
+//   "Access-Control-Allow-Origin": "*", // Or your specific frontend domain
+//   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+//   "Access-Control-Allow-Methods": "POST, OPTIONS",
+// };
+
+// serve(async (req: Request) => {
+//   const url = new URL(req.url);
+//   const path = url.pathname;
+
+//   // Handle CORS preflight requests
+//   if (req.method === "OPTIONS") {
+//     return new Response("ok", { headers: corsHeaders });
+//   }
+
+//   try {
+//     // -----------------------------------------------
+//     // 1. CREATE PAYMENT INTENT ENDPOINT
+//     // Endpoint: /stripe-payment/create-payment-intent
+//     // -----------------------------------------------
+//     if (path.endsWith("/create-payment-intent")) {
+//       if (req.method !== "POST") {
+//         return new Response("Method Not Allowed", { status: 405, headers: corsHeaders });
+//       }
+
+//       const { amount, currency, customerId, paymentMethodId, description, metadata } = await req.json();
+
+//       if (!amount || !currency) {
+//         return new Response(JSON.stringify({ error: "Amount and currency are required." }), {
+//           status: 400,
+//           headers: { ...corsHeaders, "Content-Type": "application/json" },
+//         });
+//       }
+
+//       try {
+//         const params: Stripe.PaymentIntentCreateParams = {
+//           amount: Math.round(amount * 100), // Amount in cents
+//           currency: currency.toLowerCase(),
+//           automatic_payment_methods: { enabled: true }, // Recommended by Stripe
+//           // payment_method_types: ["card"], // Or let Stripe decide based on automatic_payment_methods
+//           // description: description || "E-commerce Order Payment",
+//           // metadata: metadata || {}, // e.g., { order_id: "your_order_id" }
+//         };
+
+//         // If you manage Stripe Customers, you can associate the PaymentIntent with a customer
+//         // if (customerId) {
+//         //   params.customer = customerId;
+//         // }
+
+//         // If you are confirming on the backend with a specific payment method (less common with PaymentElement)
+//         // if (paymentMethodId) {
+//         //   params.payment_method = paymentMethodId;
+//         //   params.confirm = true; // Confirm the payment immediately
+//         //   params.confirmation_method = "manual"; // if confirm is true
+//         // }
+
+//         const paymentIntent: Stripe.PaymentIntent = await stripe.paymentIntents.create(params);
+
+//         return new Response(JSON.stringify({ clientSecret: paymentIntent.client_secret, paymentIntentId: paymentIntent.id }), {
+//           status: 200,
+//           headers: { ...corsHeaders, "Content-Type": "application/json" },
+//         });
+//       } catch (error) {
+//         console.error("Stripe API Error (Create PaymentIntent):", error);
+//         return new Response(JSON.stringify({ error: error.message }), {
+//           status: 500,
+//           headers: { ...corsHeaders, "Content-Type": "application/json" },
+//         });
+//       }
+//     }
+
+//     // -----------------------------------------------
+//     // 2. STRIPE WEBHOOK HANDLER ENDPOINT
+//     // Endpoint: /stripe-payment/webhook
+//     // -----------------------------------------------
+//     if (path.endsWith("/webhook")) {
+//       if (req.method !== "POST") {
+//         return new Response("Method Not Allowed", { status: 405, headers: corsHeaders });
+//       }
+
+//       const signature = req.headers.get("stripe-signature");
+//       const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+
+//       if (!signature || !webhookSecret) {
+//         console.error("Webhook Error: Missing Stripe signature or webhook secret.");
+//         return new Response("Webhook Error: Missing Stripe signature or webhook secret.", { status: 400 });
+//       }
+
+//       let event: Stripe.Event;
+//       const body = await req.text(); // Read body as text for signature verification
+
+//       try {
+//         event = await stripe.webhooks.constructEventAsync(
+//           body, // Raw request body (string)
+//           signature, // Signature from header
+//           webhookSecret,
+//           undefined, // Optional: tolerance for timestamp differences
+//           Stripe.createSubtleCryptoProvider() // Required for Deno runtime
+//         );
+//       } catch (err) {
+//         console.error(`Webhook signature verification failed: ${err.message}`);
+//         return new Response(`Webhook Error: ${err.message}`, { status: 400 });
+//       }
+
+//       // Successfully constructed event
+//       console.log("Received Stripe webhook event:", event.type, event.id);
+
+//       // Handle the event
+//       switch (event.type) {
+//         case "payment_intent.succeeded":
+//           const paymentIntentSucceeded = event.data.object as Stripe.PaymentIntent;
+//           console.log(`PaymentIntent ${paymentIntentSucceeded.id} was successful!`);
+//           // TODO: Fulfill the purchase (e.g., update order status in Supabase, send email)
+//           // Example: Update order status in your database
+//           // const orderId = paymentIntentSucceeded.metadata.order_id;
+//           // if (orderId) {
+//           //   const { error: dbError } = await supabaseAdminClient
+//           //     .from("orders")
+//           //     .update({ status: "processing", payment_intent_id: paymentIntentSucceeded.id })
+//           //     .eq("id", orderId);
+//           //   if (dbError) console.error("Supabase DB Error (updating order):", dbError);
+//           // }
+//           // TODO: Decrement stock, send confirmation emails, etc.
+//           break;
+
+//         case "payment_intent.payment_failed":
+//           const paymentIntentFailed = event.data.object as Stripe.PaymentIntent;
+//           console.log(`PaymentIntent ${paymentIntentFailed.id} failed.`);
+//           // TODO: Notify the customer, update order status to "failed" or "pending_payment"
+//           // const orderIdFailed = paymentIntentFailed.metadata.order_id;
+//           // if (orderIdFailed) {
+//           //   const { error: dbErrorFailed } = await supabaseAdminClient
+//           //     .from("orders")
+//           //     .update({ status: "payment_failed" })
+//           //     .eq("id", orderIdFailed);
+//           //   if (dbErrorFailed) console.error("Supabase DB Error (updating order on fail):", dbErrorFailed);
+//           // }
+//           break;
+
+//         case "charge.succeeded": // Often handled by payment_intent.succeeded
+//           const chargeSucceeded = event.data.object as Stripe.Charge;
+//           console.log(`Charge ${chargeSucceeded.id} for PI ${chargeSucceeded.payment_intent} succeeded.`);
+//           break;
+
+//         // ... handle other event types as needed (e.g., refunds, disputes)
+//         // case "charge.refunded":
+//         //   const chargeRefunded = event.data.object as Stripe.Charge;
+//         //   // Handle refund logic
+//         //   break;
+
+//         default:
+//           console.log(`Unhandled event type ${event.type}`);
+//       }
+
+//       // Return a 200 response to acknowledge receipt of the event
+//       return new Response(JSON.stringify({ received: true }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+//     }
+
+//     // Default response for unhandled paths
+//     return new Response("Not Found", { status: 404, headers: corsHeaders });
+
+//   } catch (error) {
+//     console.error("General Error in Edge Function:", error);
+//     return new Response(JSON.stringify({ error: "Internal Server Error", details: error.message }), {
+//       status: 500,
+//       headers: { ...corsHeaders, "Content-Type": "application/json" },
+//     });
+//   }
+// });
+
+/*
+Key considerations for Supabase Edge Functions with Stripe:
+
+1.  **Environment Variables:**
+    *   `STRIPE_SECRET_KEY`: Your Stripe secret API key.
+    *   `STRIPE_WEBHOOK_SECRET`: Your Stripe webhook signing secret for verifying webhook events.
+    *   `SUPABASE_URL` & `SUPABASE_SERVICE_ROLE_KEY`: If you need to interact with your Supabase database from the webhook handler (e.g., to update order status). Use a service role key for admin-level access from a trusted server-side environment.
+
+2.  **Supabase Admin Client (for Webhooks):
+    If your webhook needs to update your database, you'll need to initialize a Supabase client with the service role key.
+    ```typescript
+    // import { createClient } from "@supabase/supabase-js";
+    // const supabaseAdminClient = createClient(
+    //   Deno.env.get("SUPABASE_URL")!,
+    //   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    // );
+    ```
+
+3.  **Error Handling & Logging:** Implement robust error handling and logging for easier debugging.
+
+4.  **Idempotency for Webhooks:** Design your webhook processing logic to be idempotent. Stripe might send the same event multiple times. Check if you've already processed an event (e.g., by checking the order status or storing event IDs).
+
+5.  **Security:**
+    *   Always verify webhook signatures.
+    *   Do not expose sensitive keys on the client-side.
+    *   Validate inputs to your Edge Functions.
+
+6.  **Deployment:**
+    Deploy your functions using the Supabase CLI:
+    `supabase functions deploy stripe-payment --no-verify-jwt` (if JWT verification is not needed for public endpoints like webhooks, or handle auth appropriately).
+
+7.  **Local Testing:**
+    *   Use `supabase functions serve` to test locally.
+    *   Use the Stripe CLI to forward webhooks to your local development server: `stripe listen --forward-to localhost:54321/functions/v1/stripe-payment/webhook` (adjust port and path as needed).
+
+This conceptual code provides a starting point. You will need to adapt it to your specific application logic, error handling, and Supabase setup.
+*/
+
+console.log("This is a conceptual outline for Supabase Edge Functions handling Stripe payments. It includes creating PaymentIntents and handling Stripe webhooks. The actual implementation would require Deno, the Stripe SDK, and Supabase client libraries, along with proper environment variable setup and error handling as detailed in the comments within this file and the stripe_integration_guide.md.");
+
